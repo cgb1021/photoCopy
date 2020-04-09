@@ -111,6 +111,9 @@ func main() {
 	}
 	// 获取文件
 	files, _ := getFiles(src)
+	total := len(files)
+	counter := 0
+	duplicate := 0
 	PthSep := string(os.PathSeparator)
 	for _, file := range files {
 		data, err := ioutil.ReadFile(file)
@@ -132,11 +135,13 @@ func main() {
 				} else {
 					f, _ := os.Create(tmpPath)
 					f.Close()
-					fmt.Printf("done %s\n", file)
+					counter++
 				}
+			} else {
+				duplicate++
 			}
 		}
 	}
 	os.RemoveAll(temp)
-	fmt.Println("====================================\ncomplete!")
+	fmt.Printf("total %d, copy %d, duplicate %d, fail %d\n", total, counter, duplicate, total-counter-duplicate)
 }
