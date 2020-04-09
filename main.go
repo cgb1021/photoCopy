@@ -117,12 +117,16 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			bytes := md5.Sum(data)
-			val := fmt.Sprintf("%x", bytes)
+			val := fmt.Sprintf("%x", md5.Sum(data))
 			tmpPath := temp + PthSep + val
 			exists, _ := pathExists(tmpPath)
 			if !exists {
-				_, err := copy(file, dest+PthSep+val+"."+filepath.Base(file))
+				savePath := dest + PthSep + filepath.Base(file)
+				exists, _ := pathExists(savePath)
+				if exists {
+					savePath = dest + PthSep + val + "." + filepath.Base(file)
+				}
+				_, err := copy(file, savePath)
 				if err != nil {
 					fmt.Printf("err:%s", file)
 				} else {
