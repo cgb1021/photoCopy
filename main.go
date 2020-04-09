@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 )
+
+var debugLog *log.Logger
 
 //获取指定目录下的所有文件,包含子目录下的文件
 func getFiles(dirPth string) (files []string, err error) {
@@ -52,17 +55,20 @@ func copy(src, dst string) (int64, error) {
 	}
 
 	if !sourceFileStat.Mode().IsRegular() {
+		debugLog.Printf("%s is not a regular file", src)
 		return 0, fmt.Errorf("%s is not a regular file", src)
 	}
 
 	source, err := os.Open(src)
 	if err != nil {
+		debugLog.Printf("can't open src file %s", src)
 		return 0, err
 	}
 	defer source.Close()
 
 	destination, err := os.Create(dst)
 	if err != nil {
+		debugLog.Printf("can't open dest file %s", dst)
 		return 0, err
 	}
 
@@ -90,6 +96,16 @@ func mkdir(path string) error {
 	return err
 }
 
+func init() {
+	logFile, err := os.Create("./debug.log")
+	// defer file.Close()
+	if err != nil {
+		log.Fatalln("open log file error !")
+		debugLog = nil
+	} else {
+		debugLog = log.New(logFile, "[Debug]", log.LstdFlags)
+	}
+}
 func main() {
 	src := "./src"
 	dest := "./dest"
@@ -100,12 +116,14 @@ func main() {
 	// 创建储存目录
 	err := mkdir(dest)
 	if err != nil {
+		debugLog.Printf("mkdir dest failed![%v]", err)
 		fmt.Printf("mkdir dest failed![%v]\n", err)
 		return
 	}
 	// 创建临时目录
 	err = mkdir(temp)
 	if err != nil {
+		debugLog.Printf("mkdir temp failed![%v]", err)
 		fmt.Printf("mkdir temp failed![%v]\n", err)
 		return
 	}
@@ -118,7 +136,8 @@ func main() {
 	for _, file := range files {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			fmt.Println(err)
+			debugLog.Printf("Sum md5 error![%v]", err)
+			fmt.Printf("Sum md5 error![%v]", err)
 		} else {
 			val := fmt.Sprintf("%x", md5.Sum(data))
 			tmpPath := temp + PthSep + val
@@ -131,7 +150,8 @@ func main() {
 				}
 				_, err := copy(file, savePath)
 				if err != nil {
-					fmt.Printf("err:%s", file)
+					debugLog.Printf("copy file err %s", file)
+					fmt.Printf("copy file err %s", file)
 				} else {
 					f, _ := os.Create(tmpPath)
 					f.Close()
@@ -143,5 +163,6 @@ func main() {
 		}
 	}
 	os.RemoveAll(temp)
-	fmt.Printf("total %d, copy %d, duplicate %d, fail %d\n", total, counter, duplicate, total-counter-duplicate)
+	debugLog.Printf("DONE: total %d, copy %d, duplicate %d, fail %d\n", total, counter, duplicate, total-counter-duplicate)
+	fmt.Printf("DONE: total %d, copy %d, duplicate %d, fail %d\n", total, counter, duplicate, total-counter-duplicate)
 }
